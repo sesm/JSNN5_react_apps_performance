@@ -21,6 +21,7 @@ import {connect} from 'react-redux';
 import {setFilter, setSort} from './actonCreators.js';
 import shallowEqual from 'fbjs/lib/shallowEqual';
 import md5 from 'blueimp-md5';
+import {createSelector} from 'reselect';
 
 import injectTapEventPlugin from 'react-tap-event-plugin';
 injectTapEventPlugin();
@@ -142,17 +143,23 @@ class App extends Component {
     }
 }
 
-function mapStateToProps(state) {
-    let items = state.items
-        .sort((a,b) => {
-            if(state.sort == 'hash') {
+const itemsSelector = state => state.items;
+const sortSelector = state => state.sort;
+const filterSelector = state => state.filter;
+
+const sortedListSelector = createSelector(
+    itemsSelector,
+    sortSelector,
+    (items, sort) => items.sort(
+        (a,b) => {
+            if (sort == 'hash') {
                 let aHash = md5(a.email);
                 let bHash = md5(b.email);
                 return aHash.localeCompare(bHash);
             } else {
-                let aProp = a[state.sort];
-                let bProp = b[state.sort];
-                switch(typeof aProp) {
+                let aProp = a[sort];
+                let bProp = b[sort];
+                switch (typeof aProp) {
                     case 'number':
                         return aProp - bProp;
                     case 'string':
@@ -161,19 +168,24 @@ function mapStateToProps(state) {
                         return 0;
                 }
             }
-        })
-        .filter(item =>
-            state.filter.length == 0 ||
-            fuzzySearch(item.first_name, state.filter).length > 0 ||
-            fuzzySearch(item.last_name, state.filter).length > 0 ||
-            fuzzySearch(item.email, state.filter).length > 0
-        );
-    return {
-        items: items,
-        sort: state.sort,
-        filter: state.filter
-    }
-}
+        }
+    )
+);
+
+const totalSelector = createSelector(
+    sortedListSelector,
+    filterSelector,
+    sortSelector,
+    (list, filterStr, sort) => ({
+        items: list.filter(item =>
+            filterStr.length == 0 ||
+            fuzzySearch(item.first_name, filterStr).length > 0 ||
+            fuzzySearch(item.last_name, filterStr).length > 0 ||
+            fuzzySearch(item.email, filterStr).length > 0),
+        sort: sort,
+        filter: filterStr
+    })
+);
 
 function mapDisplatchToProps(dispatch) {
     return {
@@ -182,4 +194,4 @@ function mapDisplatchToProps(dispatch) {
     }
 }
 
-export default connect(mapStateToProps, mapDisplatchToProps)(App);
+export default connect(totalSelector, mapDisplatchToProps)(App);
