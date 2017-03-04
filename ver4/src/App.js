@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, PureComponent } from 'react';
 import lightBaseTheme from 'material-ui/styles/baseThemes/lightBaseTheme';
 import MuiThemeProvider from 'material-ui/styles/MuiThemeProvider';
 import getMuiTheme from 'material-ui/styles/getMuiTheme';
@@ -86,23 +86,9 @@ class FilterGroup extends Component {
     }
 }
 
-class MyTable extends Component {
-    shouldComponentUpdate(nextProps) {
-        let {items} = this.props;
-        let nextItems = nextProps.items;
-        if(items.length != nextItems.length) {
-            return true;
-        }
-        for(let i = 0; i < items.length; i++) {
-            if(!shallowEqual(items[i].props.item, nextItems[i].props.item)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    render() {
-        let {reference, items} = this.props;
-        return <Table>
+class App extends Component {
+    _renderTable = (items, ref) =>
+        <Table>
             <TableHeader displaySelectAll={false}>
                 <TableRow>
                     <TableHeaderColumn>ID</TableHeaderColumn>
@@ -112,16 +98,11 @@ class MyTable extends Component {
                 </TableRow>
             </TableHeader>
             <TableBody
-                ref={reference}
+                ref={ref}
                 displayRowCheckbox={false}>
                 {items}
             </TableBody>
-        </Table>
-    }
-}
-
-class App extends Component {
-    _renderTable = (items, ref) => <MyTable items={items} reference={ref}/>;
+        </Table>;
 
     _renderRow = (index, key) => {
         let {items} = this.props;
