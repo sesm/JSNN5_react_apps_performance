@@ -19,6 +19,7 @@ import {
 import ReactList from 'react-list';
 import {connect} from 'react-redux';
 import {setFilter, setSort} from './actonCreators.js';
+import shallowEqual from 'fbjs/lib/shallowEqual';
 
 import injectTapEventPlugin from 'react-tap-event-plugin';
 injectTapEventPlugin();
@@ -42,6 +43,10 @@ function fuzzySearch(input, search) {
 }
 
 class Row extends Component {
+    shouldComponentUpdate(nextProps) {
+        let {item} = this.props;
+        return !shallowEqual(item, nextProps.item);
+    }
     render() {
         let {item} = this.props;
 
@@ -58,9 +63,46 @@ class Row extends Component {
     }
 }
 
-class App extends Component {
-    _renderTable = (items, ref) =>
-        (<Table>
+class FilterGroup extends Component {
+    shouldComponentUpdate(nextProps) {
+        let {sort} = this.props;
+        return sort != nextProps.sort;
+    }
+    render() {
+        let {sort, onSort} = this.props;
+        return <ToolbarGroup style={{alignItems: 'stretch'}}>
+            <ToolbarTitle text="Sort by"/>
+            <DropDownMenu
+                style={{width: 200}}
+                value={sort}
+                onChange={onSort}
+            >
+                <MenuItem value="id" primaryText="ID"/>
+                <MenuItem value="first_name" primaryText="First Name"/>
+                <MenuItem value="last_name" primaryText="Last Name"/>
+                <MenuItem value="email" primaryText="E-mail"/>
+            </DropDownMenu>
+        </ToolbarGroup>
+    }
+}
+
+class MyTable extends Component {
+    shouldComponentUpdate(nextProps) {
+        let {items} = this.props;
+        let nextItems = nextProps.items;
+        if(items.length != nextItems.length) {
+            return true;
+        }
+        for(let i = 0; i < items.length; i++) {
+            if(!shallowEqual(items[i].props.item, nextItems[i].props.item)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    render() {
+        let {reference, items} = this.props;
+        return <Table>
             <TableHeader displaySelectAll={false}>
                 <TableRow>
                     <TableHeaderColumn>ID</TableHeaderColumn>
@@ -70,11 +112,16 @@ class App extends Component {
                 </TableRow>
             </TableHeader>
             <TableBody
-                ref={ref}
+                ref={reference}
                 displayRowCheckbox={false}>
                 {items}
             </TableBody>
-        </Table>);
+        </Table>
+    }
+}
+
+class App extends Component {
+    _renderTable = (items, ref) => <MyTable items={items} reference={ref}/>;
 
     _renderRow = (index, key) => {
         let {items} = this.props;
@@ -98,19 +145,7 @@ class App extends Component {
                                 onChange={onFilter}
                             />
                         </ToolbarGroup>
-                        <ToolbarGroup style={{alignItems: 'stretch'}}>
-                            <ToolbarTitle text="Sort by"/>
-                            <DropDownMenu
-                                style={{width: 200}}
-                                value={sort}
-                                onChange={onSort}
-                            >
-                                <MenuItem value="id" primaryText="ID"/>
-                                <MenuItem value="first_name" primaryText="First Name"/>
-                                <MenuItem value="last_name" primaryText="Last Name"/>
-                                <MenuItem value="email" primaryText="E-mail"/>
-                            </DropDownMenu>
-                        </ToolbarGroup>
+                        <FilterGroup sort={sort} onSort={onSort}/>
                     </Toolbar>
                     <ReactList
                         itemRenderer={this._renderRow}
