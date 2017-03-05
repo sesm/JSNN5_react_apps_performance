@@ -8,7 +8,7 @@ import {
 import { Provider } from 'react-redux';
 import * as constants from './constants';
 
-import data from './data/data500';
+import data from './data/data2k';
 
 import Perf from 'react-addons-perf';
 window.Perf = Perf;
